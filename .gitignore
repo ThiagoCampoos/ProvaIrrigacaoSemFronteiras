@@ -6,3 +6,4 @@ __pycache__
 htmlcov
 .coveragerc
 .ipynb_checkpoints
+*.md
