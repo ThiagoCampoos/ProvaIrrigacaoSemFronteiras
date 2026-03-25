@@ -4,13 +4,16 @@ from .person import Person
 
 
 class ProfessionalServices(BaseModel):
+    """Registro de servico prestado por profissional para suporte da Casa de Apoio."""
+
     class Meta:
         verbose_name_plural = "Serviços de profissional"
         verbose_name = "Serviço de profissional"
 
     professional = models.ForeignKey(Person,
                                      on_delete=models.PROTECT,
-                                     verbose_name="Profissional")
+                                     verbose_name="Profissional",
+                                     db_index=True)
 
     title = models.CharField(default="Sem título",
                              max_length=120,

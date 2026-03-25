@@ -11,65 +11,118 @@ admin.site.index_title = "Bem vindo! "
 
 
 class PersonAdmin(admin.ModelAdmin):
-    list_display = ('name', 'born_date')
-    list_filter = ['gender', 'state']
-    search_fields = ['name']
-    fieldsets = [('Identificação', {
-        'fields': [
-            'name', 'mother_name', 'born_date', 'cpf', ('rg', 'rg_ssp'),
-            'gender'
-        ]
-    }),
-                 ('Endereço', {
-                     'fields': [
-                         'address_line_1', 'address_line_2', 'neighbourhood',
-                         'state', 'city', 'postal_code', 'residence_type'
-                     ]
-                 }),
-                 ('Contato', {
-                     'fields': [
-                         'email', ('ddd_private_phone', 'private_phone'),
-                         ('ddd_message_phone', 'message_phone')
-                     ]
-                 }),
-                 ('Outras informações', {
-                     'fields': ['observation', 'death_date'],
-                     'classes': ('collapse', ),
-                 })]
+    list_display = ("name", "born_date")
+    list_filter = ["gender", "state"]
+    search_fields = ["name"]
+    fieldsets = [
+        (
+            "Identificação",
+            {
+                "fields": [
+                    "name",
+                    "mother_name",
+                    "born_date",
+                    "cpf",
+                    ("rg", "rg_ssp"),
+                    "gender",
+                ]
+            },
+        ),
+        (
+            "Endereço",
+            {
+                "fields": [
+                    "address_line_1",
+                    "address_line_2",
+                    "neighbourhood",
+                    "state",
+                    "city",
+                    "postal_code",
+                    "residence_type",
+                ]
+            },
+        ),
+        (
+            "Contato",
+            {
+                "fields": [
+                    "email",
+                    ("ddd_private_phone", "private_phone"),
+                    ("ddd_message_phone", "message_phone"),
+                ]
+            },
+        ),
+        (
+            "Outras informações",
+            {
+                "fields": ["observation", "death_date"],
+                "classes": ("collapse",),
+            },
+        ),
+    ]
 
 
 class CheckinAdmin(admin.ModelAdmin):
-    list_display = ('person', 'reason', 'created_at')
-    list_filter = ['reason']
-    search_fields = ['person']
-    fieldsets = [('Identificação', {
-        'fields': ['person', 'reason']
-    }),
-                 ('Preencher se paciente:', {
-                     'fields': [
-                         'companion',
-                         ('chemotherapy', 'radiotherapy', 'surgery',
-                          'appointment', 'exams', 'other'), 'ca_number',
-                         'social_vacancy'
-                     ]
-                 }),
-                 ('Outras informações', {
-                     'fields': ['observation', 'active'],
-                     'classes': ('collapse', ),
-                 })]
+    list_display = ("person", "reason", "created_at")
+    list_select_related = ("person", "companion")
+    list_filter = ["reason"]
+    search_fields = ["person__name"]
+    fieldsets = [
+        ("Identificação", {"fields": ["person", "reason"]}),
+        (
+            "Preencher se paciente:",
+            {
+                "fields": [
+                    "companion",
+                    (
+                        "chemotherapy",
+                        "radiotherapy",
+                        "surgery",
+                        "appointment",
+                        "exams",
+                        "other",
+                    ),
+                    "ca_number",
+                    "social_vacancy",
+                ]
+            },
+        ),
+        (
+            "Outras informações",
+            {
+                "fields": ["observation", "active"],
+                "classes": ("collapse",),
+            },
+        ),
+    ]
 
 
 class CheckoutAdmin(admin.ModelAdmin):
-    list_display = ('checkin', 'created_at')
+    list_display = ("checkin", "created_at")
+
+    def get_queryset(self, request):
+        return (
+            super().get_queryset(request).select_related("checkin", "checkin__person")
+        )
 
 
 class HomeServicesAdmin(admin.ModelAdmin):
-    list_display = ('person', 'breakfast', 'lunch', 'snack', 'dinner',
-                    'shower', 'sleep', 'created_at')
+    list_select_related = ("person",)
+    list_display = (
+        "person",
+        "breakfast",
+        "lunch",
+        "snack",
+        "dinner",
+        "shower",
+        "sleep",
+        "created_at",
+    )
 
 
 class ProfessionalServicesAdmin(admin.ModelAdmin):
-    list_display = ('professional', 'title', 'description', 'created_at')
+    list_select_related = ("professional",)
+    list_display = ("professional", "title", "description", "created_at")
 
 
 admin.site.register(Person, PersonAdmin)

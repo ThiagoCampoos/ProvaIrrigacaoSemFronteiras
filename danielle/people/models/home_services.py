@@ -4,13 +4,16 @@ from .person import Person
 
 
 class HomeServices(BaseModel):
+    """Registro dos servicos de apoio domestico oferecidos para uma pessoa."""
+
     class Meta:
         verbose_name_plural = "Serviços da casa"
         verbose_name = "Serviço da casa"
 
     person = models.ForeignKey(Person,
                                on_delete=models.PROTECT,
-                               verbose_name="Pessoa")
+                               verbose_name="Pessoa",
+                               db_index=True)
 
     breakfast = models.BooleanField(default=False,
                                     blank=True,

@@ -1,0 +1,2793 @@
+openapi: 3.0.3
+info:
+  title: Casa de Apoio API
+  version: 1.0.0
+  description: API de gerenciamento da Casa de Apoio com suporte a cadastros de pessoas,
+    check-ins/check-outs, serviços domésticos de apoio (alimentação, higiene, repouso)
+    e serviços profissionais de atendimento. Todos os endpoints requerem autenticação
+    via token.
+  license:
+    name: MIT
+paths:
+  /api-token-auth/:
+    post:
+      operationId: api_token_auth_create
+      tags:
+      - api-token-auth
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+          description: ''
+  /api/v1/checkins/:
+    get:
+      operationId: checkins_list
+      description: Lista check-ins com filtros de atividade, busca por nome e ordenacao
+        por data de criacao.
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: string
+        description: Filtra por status ativo do check-in.
+        examples:
+          Ativos:
+            value: 'true'
+          Inativos:
+            value: 'false'
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: Ordenacao por created_at. Use -created_at para descendente.
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Busca por nome da pessoa principal.
+        examples:
+          BuscarPorNome:
+            value: Joao
+            summary: Buscar por nome
+      tags:
+      - checkins
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCheckinList'
+          description: ''
+        '401':
+          description: Token invalido.
+    post:
+      operationId: checkins_create
+      description: Cria um check-in. Quando reason=patient, o campo companion e obrigatorio.
+      tags:
+      - checkins
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Checkin'
+            examples:
+              ExemploDeRequest:
+                value:
+                  person: 1
+                  companion: 2
+                  reason: patient
+                  chemotherapy: true
+                  radiotherapy: false
+                  surgery: false
+                  exams: true
+                  appointment: true
+                  other: false
+                  ca_number: CA-001-2026
+                  social_vacancy: true
+                  observation: Paciente aguardando atendimento.
+                  active: true
+                summary: Exemplo de request
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Checkin'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Checkin'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Checkin'
+              examples:
+                ExemploDeResposta:
+                  value:
+                    id: 10
+                    person: 1
+                    companion: 2
+                    reason: patient
+                    active: true
+                    person_name: Joao Silva Santos
+                    companion_name: Maria Silva
+                    formatted_created_at: 23/03/2026
+                  summary: Exemplo de resposta
+          description: ''
+        '400':
+          description: Erro de validacao dos dados enviados.
+        '401':
+          description: Token invalido.
+  /api/v1/checkins/{id}/:
+    get:
+      operationId: checkins_retrieve
+      description: Recupera os dados de um check-in por ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Check-in.
+        required: true
+      tags:
+      - checkins
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Checkin'
+          description: ''
+    put:
+      operationId: checkins_update
+      description: Atualiza totalmente os dados de um check-in.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Check-in.
+        required: true
+      tags:
+      - checkins
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Checkin'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Checkin'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Checkin'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Checkin'
+          description: ''
+    patch:
+      operationId: checkins_partial_update
+      description: Atualiza parcialmente os dados de um check-in.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Check-in.
+        required: true
+      tags:
+      - checkins
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCheckin'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCheckin'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCheckin'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Checkin'
+          description: ''
+    delete:
+      operationId: checkins_destroy
+      description: Remove um check-in existente.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Check-in.
+        required: true
+      tags:
+      - checkins
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/home_services/:
+    get:
+      operationId: home_services_list
+      description: Lista servicos de apoio domestico com busca por nome da pessoa
+        e ordenacao por data.
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: Ordenacao por created_at.
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Busca por nome da pessoa atendida.
+      tags:
+      - home_services
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedHomeServicesList'
+          description: ''
+    post:
+      operationId: home_services_create
+      description: Cria um registro de servicos domesticos para uma pessoa.
+      tags:
+      - home_services
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HomeServices'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/HomeServices'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/HomeServices'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomeServices'
+          description: ''
+  /api/v1/home_services/{id}/:
+    get:
+      operationId: home_services_retrieve
+      description: Recupera um registro de servicos domesticos por ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Serviço da casa.
+        required: true
+      tags:
+      - home_services
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomeServices'
+          description: ''
+    put:
+      operationId: home_services_update
+      description: Atualiza totalmente um registro de servicos domesticos.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Serviço da casa.
+        required: true
+      tags:
+      - home_services
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HomeServices'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/HomeServices'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/HomeServices'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomeServices'
+          description: ''
+    patch:
+      operationId: home_services_partial_update
+      description: Atualiza parcialmente um registro de servicos domesticos.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Serviço da casa.
+        required: true
+      tags:
+      - home_services
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedHomeServices'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedHomeServices'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedHomeServices'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomeServices'
+          description: ''
+    delete:
+      operationId: home_services_destroy
+      description: Remove um registro de servicos domesticos.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Serviço da casa.
+        required: true
+      tags:
+      - home_services
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/patient_companion_checkin/:
+    get:
+      operationId: patient_companion_checkin_list
+      description: Lista check-ins simplificados de paciente com acompanhante.
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: Ordenacao por created_at.
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Busca por nome do paciente.
+      tags:
+      - patient_companion_checkin
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPatientCompanionCheckinList'
+          description: ''
+    post:
+      operationId: patient_companion_checkin_create
+      description: Cria check-in simplificado para vinculo paciente-acompanhante.
+      tags:
+      - patient_companion_checkin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientCompanionCheckin'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatientCompanionCheckin'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatientCompanionCheckin'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientCompanionCheckin'
+          description: ''
+  /api/v1/patient_companion_checkin/{id}/:
+    get:
+      operationId: patient_companion_checkin_retrieve
+      description: Recupera check-in simplificado por ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient companion checkin.
+        required: true
+      tags:
+      - patient_companion_checkin
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientCompanionCheckin'
+          description: ''
+    put:
+      operationId: patient_companion_checkin_update
+      description: Atualiza totalmente check-in simplificado por ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient companion checkin.
+        required: true
+      tags:
+      - patient_companion_checkin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientCompanionCheckin'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatientCompanionCheckin'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatientCompanionCheckin'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientCompanionCheckin'
+          description: ''
+    patch:
+      operationId: patient_companion_checkin_partial_update
+      description: Atualiza parcialmente check-in simplificado por ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient companion checkin.
+        required: true
+      tags:
+      - patient_companion_checkin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientCompanionCheckin'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientCompanionCheckin'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientCompanionCheckin'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientCompanionCheckin'
+          description: ''
+    delete:
+      operationId: patient_companion_checkin_destroy
+      description: Remove check-in simplificado por ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient companion checkin.
+        required: true
+      tags:
+      - patient_companion_checkin
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/people/:
+    get:
+      operationId: people_list
+      description: Lista pessoas com suporte a busca, ordenacao e paginacao.
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+      - in: query
+        name: offset
+        schema:
+          type: integer
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: Ordenacao por name. Use -name para descendente.
+        examples:
+          Ascendente:
+            value: name
+          Descendente:
+            value: -name
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Busca textual por nome da pessoa.
+        examples:
+          BuscarPorNome:
+            value: Joao
+            summary: Buscar por nome
+      tags:
+      - people
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPersonList'
+          description: ''
+        '401':
+          description: Token nao fornecido ou invalido.
+    post:
+      operationId: people_create
+      description: Cria uma nova pessoa com validacoes de cadastro (CPF, CEP, telefone
+        e cidade).
+      tags:
+      - people
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Person'
+            examples:
+              ExemploDeRequest:
+                value:
+                  name: Joao Silva Santos
+                  mother_name: Maria da Silva
+                  born_date: '1985-03-15'
+                  gender: M
+                  email: joao.silva@email.com
+                  cpf: '12345678901'
+                  rg: '1234567'
+                  rg_ssp: SP
+                  state: SP
+                  address_line_1: Rua das Flores, 123
+                  address_line_2: Apartamento 45
+                  neighbourhood: Centro
+                  city: Sao Paulo
+                  postal_code: '01310100'
+                  residence_type: urban
+                  ddd_private_phone: '11'
+                  private_phone: '33334444'
+                  ddd_message_phone: '11'
+                  message_phone: '999998888'
+                  observation: Paciente com retorno de consulta em 7 dias.
+                summary: Exemplo de request
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Person'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Person'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+          description: Pessoa criada com sucesso.
+        '400':
+          description: Erro de validacao dos dados enviados.
+        '401':
+          description: Token nao fornecido ou invalido.
+  /api/v1/people/{id}/:
+    get:
+      operationId: people_retrieve
+      description: Recupera os dados de uma pessoa pelo identificador.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Pessoa.
+        required: true
+      tags:
+      - people
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+              examples:
+                ExemploDeResposta:
+                  value:
+                    id: 1
+                    name: Joao Silva Santos
+                    formatted_born_date: 15/03/1985
+                    formatted_cpf: 123.456.789-01
+                    formatted_postal_code: 01310-100
+                  summary: Exemplo de resposta
+          description: Pessoa encontrada.
+        '401':
+          description: Token nao fornecido ou invalido.
+        '404':
+          description: Pessoa nao encontrada.
+    put:
+      operationId: people_update
+      description: Atualiza totalmente os dados de uma pessoa.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Pessoa.
+        required: true
+      tags:
+      - people
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Person'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Person'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Person'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+          description: ''
+    patch:
+      operationId: people_partial_update
+      description: Atualiza parcialmente os dados de uma pessoa.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Pessoa.
+        required: true
+      tags:
+      - people
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPerson'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPerson'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPerson'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+          description: ''
+    delete:
+      operationId: people_destroy
+      description: Remove uma pessoa quando nao houver bloqueio por relacionamento
+        protegido.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Pessoa.
+        required: true
+      tags:
+      - people
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/professional_services/:
+    get:
+      operationId: professional_services_list
+      description: Lista servicos profissionais com busca por nome do profissional
+        e ordenacao por data.
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: Ordenacao por created_at.
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Busca por nome do profissional.
+      tags:
+      - professional_services
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProfessionalServicesList'
+          description: ''
+    post:
+      operationId: professional_services_create
+      description: Cria um registro de servico profissional.
+      tags:
+      - professional_services
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfessionalServices'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProfessionalServices'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProfessionalServices'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfessionalServices'
+          description: ''
+  /api/v1/professional_services/{id}/:
+    get:
+      operationId: professional_services_retrieve
+      description: Recupera um registro de servico profissional por ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Serviço de profissional.
+        required: true
+      tags:
+      - professional_services
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfessionalServices'
+          description: ''
+    put:
+      operationId: professional_services_update
+      description: Atualiza totalmente um registro de servico profissional.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Serviço de profissional.
+        required: true
+      tags:
+      - professional_services
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfessionalServices'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProfessionalServices'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProfessionalServices'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfessionalServices'
+          description: ''
+    patch:
+      operationId: professional_services_partial_update
+      description: Atualiza parcialmente um registro de servico profissional.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Serviço de profissional.
+        required: true
+      tags:
+      - professional_services
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfessionalServices'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProfessionalServices'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProfessionalServices'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfessionalServices'
+          description: ''
+    delete:
+      operationId: professional_services_destroy
+      description: Remove um registro de servico profissional.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Serviço de profissional.
+        required: true
+      tags:
+      - professional_services
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /login/:
+    post:
+      operationId: login_create
+      description: Autentica usuario com username e password e retorna token de acesso
+        da API.
+      tags:
+      - login
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              RequestDeLogin:
+                value:
+                  username: admin
+                  password: senha123
+                summary: Request de login
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              examples:
+                RespostaDeSucesso:
+                  value:
+                    token: abc123def456ghi789
+                    id: 1
+                  summary: Resposta de sucesso
+          description: Autenticacao realizada com sucesso.
+        '400':
+          description: Credenciais invalidas.
+  /users/:
+    post:
+      operationId: users_create
+      description: Cria um novo usuario para autenticacao na API e gera token automaticamente.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /users/{id}/:
+    get:
+      operationId: users_retrieve
+      description: Recupera os dados publicos de um usuario pelo ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - users
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+components:
+  schemas:
+    AuthToken:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+          title: Nome do usuário
+        password:
+          type: string
+          writeOnly: true
+          title: Senha
+        token:
+          type: string
+          readOnly: true
+      required:
+      - password
+      - token
+      - username
+    BlankEnum:
+      enum:
+      - ''
+    Checkin:
+      type: object
+      description: Serializer de check-in com validacao de acompanhante para pacientes.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        companion_name:
+          type: string
+          description: Somente leitura. Nome do acompanhante vinculado.
+        person_name:
+          type: string
+          description: Somente leitura. Nome da pessoa principal do check-in.
+        formatted_created_at:
+          type: string
+          description: Somente leitura. Data de criacao formatada.
+        reason:
+          allOf:
+          - $ref: '#/components/schemas/ReasonEnum'
+          title: Tipo de check-in
+          description: |-
+            Motivo do check-in: patient, companion, professional, voluntary, visitor ou other.
+
+            * `patient` - Paciente
+            * `companion` - Acompanhante
+            * `professional` - Profissional
+            * `voluntary` - Voluntário
+            * `visitor` - Visitantes
+            * `other` - Outros
+        chemotherapy:
+          type: boolean
+          title: Quimioterapia
+          description: Indica necessidade de quimioterapia.
+        radiotherapy:
+          type: boolean
+          title: Radioterapia
+          description: Indica necessidade de radioterapia.
+        surgery:
+          type: boolean
+          title: Cirurgia
+          description: Indica necessidade de cirurgia.
+        exams:
+          type: boolean
+          title: Exames
+          description: Indica necessidade de exames.
+        appointment:
+          type: boolean
+          title: Consultas
+          description: Indica necessidade de consulta.
+        other:
+          type: boolean
+          title: Outros
+          description: Outras necessidades de atendimento.
+        ca_number:
+          type: string
+          nullable: true
+          title: Número C.A.
+          description: Numero C.A. quando aplicavel.
+          maxLength: 20
+        social_vacancy:
+          type: boolean
+          nullable: true
+          title: Vaga Social?
+          description: Indica se ocupa vaga social.
+        observation:
+          type: string
+          nullable: true
+          title: Observação
+          description: Observacoes sobre o check-in (max 600 caracteres).
+          maxLength: 600
+        active:
+          type: boolean
+          title: Ativo
+          description: 'Status do check-in: true para ativo, false para encerrado.'
+        person:
+          type: integer
+          title: Pessoa
+          description: ID da pessoa que realizou o check-in.
+        companion:
+          type: integer
+          nullable: true
+          title: Acompanhante
+          description: ID do acompanhante. Obrigatorio quando reason='patient'.
+      required:
+      - id
+      - person
+      - reason
+    DddMessagePhoneEnum:
+      enum:
+      - '11'
+      - '12'
+      - '13'
+      - '14'
+      - '15'
+      - '16'
+      - '17'
+      - '18'
+      - '19'
+      - '21'
+      - '22'
+      - '24'
+      - '27'
+      - '28'
+      - '31'
+      - '32'
+      - '33'
+      - '34'
+      - '35'
+      - '37'
+      - '38'
+      - '41'
+      - '42'
+      - '43'
+      - '44'
+      - '45'
+      - '46'
+      - '47'
+      - '48'
+      - '49'
+      - '51'
+      - '53'
+      - '54'
+      - '55'
+      - '61'
+      - '62'
+      - '63'
+      - '64'
+      - '65'
+      - '66'
+      - '67'
+      - '68'
+      - '69'
+      - '71'
+      - '73'
+      - '74'
+      - '75'
+      - '77'
+      - '79'
+      - '81'
+      - '82'
+      - '83'
+      - '84'
+      - '85'
+      - '86'
+      - '87'
+      - '88'
+      - '89'
+      - '91'
+      - '92'
+      - '93'
+      - '94'
+      - '95'
+      - '96'
+      - '97'
+      - '98'
+      - '99'
+      type: string
+      description: |-
+        * `11` - 11
+        * `12` - 12
+        * `13` - 13
+        * `14` - 14
+        * `15` - 15
+        * `16` - 16
+        * `17` - 17
+        * `18` - 18
+        * `19` - 19
+        * `21` - 21
+        * `22` - 22
+        * `24` - 24
+        * `27` - 27
+        * `28` - 28
+        * `31` - 31
+        * `32` - 32
+        * `33` - 33
+        * `34` - 34
+        * `35` - 35
+        * `37` - 37
+        * `38` - 38
+        * `41` - 41
+        * `42` - 42
+        * `43` - 43
+        * `44` - 44
+        * `45` - 45
+        * `46` - 46
+        * `47` - 47
+        * `48` - 48
+        * `49` - 49
+        * `51` - 51
+        * `53` - 53
+        * `54` - 54
+        * `55` - 55
+        * `61` - 61
+        * `62` - 62
+        * `63` - 63
+        * `64` - 64
+        * `65` - 65
+        * `66` - 66
+        * `67` - 67
+        * `68` - 68
+        * `69` - 69
+        * `71` - 71
+        * `73` - 73
+        * `74` - 74
+        * `75` - 75
+        * `77` - 77
+        * `79` - 79
+        * `81` - 81
+        * `82` - 82
+        * `83` - 83
+        * `84` - 84
+        * `85` - 85
+        * `86` - 86
+        * `87` - 87
+        * `88` - 88
+        * `89` - 89
+        * `91` - 91
+        * `92` - 92
+        * `93` - 93
+        * `94` - 94
+        * `95` - 95
+        * `96` - 96
+        * `97` - 97
+        * `98` - 98
+        * `99` - 99
+    DddPrivatePhoneEnum:
+      enum:
+      - '11'
+      - '12'
+      - '13'
+      - '14'
+      - '15'
+      - '16'
+      - '17'
+      - '18'
+      - '19'
+      - '21'
+      - '22'
+      - '24'
+      - '27'
+      - '28'
+      - '31'
+      - '32'
+      - '33'
+      - '34'
+      - '35'
+      - '37'
+      - '38'
+      - '41'
+      - '42'
+      - '43'
+      - '44'
+      - '45'
+      - '46'
+      - '47'
+      - '48'
+      - '49'
+      - '51'
+      - '53'
+      - '54'
+      - '55'
+      - '61'
+      - '62'
+      - '63'
+      - '64'
+      - '65'
+      - '66'
+      - '67'
+      - '68'
+      - '69'
+      - '71'
+      - '73'
+      - '74'
+      - '75'
+      - '77'
+      - '79'
+      - '81'
+      - '82'
+      - '83'
+      - '84'
+      - '85'
+      - '86'
+      - '87'
+      - '88'
+      - '89'
+      - '91'
+      - '92'
+      - '93'
+      - '94'
+      - '95'
+      - '96'
+      - '97'
+      - '98'
+      - '99'
+      type: string
+      description: |-
+        * `11` - 11
+        * `12` - 12
+        * `13` - 13
+        * `14` - 14
+        * `15` - 15
+        * `16` - 16
+        * `17` - 17
+        * `18` - 18
+        * `19` - 19
+        * `21` - 21
+        * `22` - 22
+        * `24` - 24
+        * `27` - 27
+        * `28` - 28
+        * `31` - 31
+        * `32` - 32
+        * `33` - 33
+        * `34` - 34
+        * `35` - 35
+        * `37` - 37
+        * `38` - 38
+        * `41` - 41
+        * `42` - 42
+        * `43` - 43
+        * `44` - 44
+        * `45` - 45
+        * `46` - 46
+        * `47` - 47
+        * `48` - 48
+        * `49` - 49
+        * `51` - 51
+        * `53` - 53
+        * `54` - 54
+        * `55` - 55
+        * `61` - 61
+        * `62` - 62
+        * `63` - 63
+        * `64` - 64
+        * `65` - 65
+        * `66` - 66
+        * `67` - 67
+        * `68` - 68
+        * `69` - 69
+        * `71` - 71
+        * `73` - 73
+        * `74` - 74
+        * `75` - 75
+        * `77` - 77
+        * `79` - 79
+        * `81` - 81
+        * `82` - 82
+        * `83` - 83
+        * `84` - 84
+        * `85` - 85
+        * `86` - 86
+        * `87` - 87
+        * `88` - 88
+        * `89` - 89
+        * `91` - 91
+        * `92` - 92
+        * `93` - 93
+        * `94` - 94
+        * `95` - 95
+        * `96` - 96
+        * `97` - 97
+        * `98` - 98
+        * `99` - 99
+    GenderEnum:
+      enum:
+      - M
+      - F
+      - O
+      type: string
+      description: |-
+        * `M` - Masculino
+        * `F` - Feminino
+        * `O` - Outro
+    HomeServices:
+      type: object
+      description: Serializer para registro de servicos de apoio domestico.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        person_name:
+          type: string
+          description: Somente leitura. Nome da pessoa atendida.
+        formatted_created_at:
+          type: string
+          description: Somente leitura. Data de criacao formatada.
+        breakfast:
+          type: boolean
+          title: Café da manhã
+          description: Indica oferta de cafe da manha.
+        lunch:
+          type: boolean
+          title: Almoço
+          description: Indica oferta de almoco.
+        snack:
+          type: boolean
+          title: Lanche da tarde
+          description: Indica oferta de lanche da tarde.
+        dinner:
+          type: boolean
+          title: Jantar
+          description: Indica oferta de jantar.
+        shower:
+          type: boolean
+          title: Banho
+          description: Indica oferta de banho.
+        sleep:
+          type: boolean
+          title: Per noite
+          description: Indica oferta de pernoite.
+        person:
+          type: integer
+          title: Pessoa
+          description: ID da pessoa atendida.
+      required:
+      - id
+      - person
+    LoginRequest:
+      type: object
+      description: Schema do request de autenticacao por usuario e senha.
+      properties:
+        username:
+          type: string
+          description: Nome de usuario para autenticacao.
+        password:
+          type: string
+          description: Senha de autenticacao.
+      required:
+      - password
+      - username
+    LoginResponse:
+      type: object
+      description: Schema do response de autenticacao com token.
+      properties:
+        token:
+          type: string
+          description: Token de autenticacao para uso no header Authorization.
+        id:
+          type: integer
+          description: ID do usuario autenticado.
+      required:
+      - id
+      - token
+    NullEnum:
+      enum:
+      - null
+    PaginatedCheckinList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Checkin'
+    PaginatedHomeServicesList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/HomeServices'
+    PaginatedPatientCompanionCheckinList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatientCompanionCheckin'
+    PaginatedPersonList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Person'
+    PaginatedProfessionalServicesList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfessionalServices'
+    PatchedCheckin:
+      type: object
+      description: Serializer de check-in com validacao de acompanhante para pacientes.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        companion_name:
+          type: string
+          description: Somente leitura. Nome do acompanhante vinculado.
+        person_name:
+          type: string
+          description: Somente leitura. Nome da pessoa principal do check-in.
+        formatted_created_at:
+          type: string
+          description: Somente leitura. Data de criacao formatada.
+        reason:
+          allOf:
+          - $ref: '#/components/schemas/ReasonEnum'
+          title: Tipo de check-in
+          description: |-
+            Motivo do check-in: patient, companion, professional, voluntary, visitor ou other.
+
+            * `patient` - Paciente
+            * `companion` - Acompanhante
+            * `professional` - Profissional
+            * `voluntary` - Voluntário
+            * `visitor` - Visitantes
+            * `other` - Outros
+        chemotherapy:
+          type: boolean
+          title: Quimioterapia
+          description: Indica necessidade de quimioterapia.
+        radiotherapy:
+          type: boolean
+          title: Radioterapia
+          description: Indica necessidade de radioterapia.
+        surgery:
+          type: boolean
+          title: Cirurgia
+          description: Indica necessidade de cirurgia.
+        exams:
+          type: boolean
+          title: Exames
+          description: Indica necessidade de exames.
+        appointment:
+          type: boolean
+          title: Consultas
+          description: Indica necessidade de consulta.
+        other:
+          type: boolean
+          title: Outros
+          description: Outras necessidades de atendimento.
+        ca_number:
+          type: string
+          nullable: true
+          title: Número C.A.
+          description: Numero C.A. quando aplicavel.
+          maxLength: 20
+        social_vacancy:
+          type: boolean
+          nullable: true
+          title: Vaga Social?
+          description: Indica se ocupa vaga social.
+        observation:
+          type: string
+          nullable: true
+          title: Observação
+          description: Observacoes sobre o check-in (max 600 caracteres).
+          maxLength: 600
+        active:
+          type: boolean
+          title: Ativo
+          description: 'Status do check-in: true para ativo, false para encerrado.'
+        person:
+          type: integer
+          title: Pessoa
+          description: ID da pessoa que realizou o check-in.
+        companion:
+          type: integer
+          nullable: true
+          title: Acompanhante
+          description: ID do acompanhante. Obrigatorio quando reason='patient'.
+    PatchedHomeServices:
+      type: object
+      description: Serializer para registro de servicos de apoio domestico.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        person_name:
+          type: string
+          description: Somente leitura. Nome da pessoa atendida.
+        formatted_created_at:
+          type: string
+          description: Somente leitura. Data de criacao formatada.
+        breakfast:
+          type: boolean
+          title: Café da manhã
+          description: Indica oferta de cafe da manha.
+        lunch:
+          type: boolean
+          title: Almoço
+          description: Indica oferta de almoco.
+        snack:
+          type: boolean
+          title: Lanche da tarde
+          description: Indica oferta de lanche da tarde.
+        dinner:
+          type: boolean
+          title: Jantar
+          description: Indica oferta de jantar.
+        shower:
+          type: boolean
+          title: Banho
+          description: Indica oferta de banho.
+        sleep:
+          type: boolean
+          title: Per noite
+          description: Indica oferta de pernoite.
+        person:
+          type: integer
+          title: Pessoa
+          description: ID da pessoa atendida.
+    PatchedPatientCompanionCheckin:
+      type: object
+      description: Serializer para check-in simplificado de paciente com acompanhante.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        companion_name:
+          type: string
+          description: Somente leitura. Nome do acompanhante.
+        patient_name:
+          type: string
+          description: Somente leitura. Nome do paciente.
+        formatted_created_at:
+          type: string
+          description: Somente leitura. Data formatada.
+        patient:
+          type: integer
+          title: Paciente
+          description: ID da pessoa paciente.
+        companion:
+          type: integer
+          title: Acompanhante
+          description: ID da pessoa acompanhante.
+    PatchedPerson:
+      type: object
+      description: Serializer de pessoa com normalizacao textual e campos formatados
+        de leitura.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        formatted_born_date:
+          type: string
+          description: Somente leitura. Data de nascimento formatada como DD/MM/YYYY.
+        formatted_cpf:
+          type: string
+          description: Somente leitura. CPF formatado como XXX.XXX.XXX-XX.
+        formatted_postal_code:
+          type: string
+          description: Somente leitura. CEP formatado como XXXXX-XXX.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Criado em
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Atualizado em
+        name:
+          type: string
+          title: Nome
+          description: Nome completo da pessoa (max 100 caracteres).
+          maxLength: 100
+        mother_name:
+          type: string
+          nullable: true
+          title: Nome da mãe
+          description: Nome da mae (opcional).
+          maxLength: 100
+        born_date:
+          type: string
+          format: date
+          nullable: true
+          title: Dt. nascimento
+          description: Data de nascimento no formato YYYY-MM-DD.
+        death_date:
+          type: string
+          format: date
+          nullable: true
+          title: Dt. óbito
+        email:
+          type: string
+          format: email
+          nullable: true
+          title: E-mail
+          description: Email valido para contato.
+          maxLength: 100
+        gender:
+          nullable: true
+          title: Gênero
+          description: |-
+            Genero: M, F ou O.
+
+            * `M` - Masculino
+            * `F` - Feminino
+            * `O` - Outro
+          oneOf:
+          - $ref: '#/components/schemas/GenderEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        cpf:
+          type: string
+          nullable: true
+          description: 'CPF sem mascara, somente digitos. Exemplo: 12345678901.'
+          maxLength: 14
+        rg:
+          type: string
+          nullable: true
+          description: RG da pessoa (opcional).
+          maxLength: 14
+        rg_ssp:
+          nullable: true
+          title: SSP
+          description: |-
+            UF emissora do RG (exemplo: SP).
+
+            * `SP` - São Paulo
+            * `PR` - Paraná
+            * `SC` - Santa Catarina
+            * `RS` - Rio Grande do Sul
+            * `MS` - Mato Grosso do Sul
+            * `RO` - Rondônia
+            * `AC` - Acre
+            * `AM` - Amazonas
+            * `RR` - Roraima
+            * `PA` - Pará
+            * `AP` - Amapá
+            * `TO` - Tocantins
+            * `MA` - Maranhão
+            * `RN` - Rio Grande do Norte
+            * `PB` - Paraíba
+            * `PE` - Pernambuco
+            * `AL` - Alagoas
+            * `SE` - Sergipe
+            * `BA` - Bahia
+            * `MG` - Minas Gerais
+            * `RJ` - Rio de Janeiro
+            * `MT` - Mato Grosso
+            * `GO` - Goiás
+            * `DF` - Distrito Federal
+            * `PI` - Piauí
+            * `CE` - Ceará
+            * `ES` - Espírito Santo
+          oneOf:
+          - $ref: '#/components/schemas/RgSspEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        state:
+          nullable: true
+          title: Estado
+          description: |-
+            UF de residencia ou origem.
+
+            * `SP` - São Paulo
+            * `PR` - Paraná
+            * `SC` - Santa Catarina
+            * `RS` - Rio Grande do Sul
+            * `MS` - Mato Grosso do Sul
+            * `RO` - Rondônia
+            * `AC` - Acre
+            * `AM` - Amazonas
+            * `RR` - Roraima
+            * `PA` - Pará
+            * `AP` - Amapá
+            * `TO` - Tocantins
+            * `MA` - Maranhão
+            * `RN` - Rio Grande do Norte
+            * `PB` - Paraíba
+            * `PE` - Pernambuco
+            * `AL` - Alagoas
+            * `SE` - Sergipe
+            * `BA` - Bahia
+            * `MG` - Minas Gerais
+            * `RJ` - Rio de Janeiro
+            * `MT` - Mato Grosso
+            * `GO` - Goiás
+            * `DF` - Distrito Federal
+            * `PI` - Piauí
+            * `CE` - Ceará
+            * `ES` - Espírito Santo
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        address_line_1:
+          type: string
+          nullable: true
+          title: Endereço (linha 1)
+          description: 'Endereco principal: rua e numero.'
+          maxLength: 100
+        address_line_2:
+          type: string
+          nullable: true
+          title: Endereço (linha 2)
+          description: Complemento de endereco (opcional).
+          maxLength: 100
+        neighbourhood:
+          type: string
+          nullable: true
+          title: Bairro
+          description: Bairro.
+          maxLength: 60
+        city:
+          type: string
+          nullable: true
+          title: Cidade
+          description: Cidade valida no Brasil.
+          maxLength: 60
+        postal_code:
+          type: string
+          nullable: true
+          title: CEP
+          description: 'CEP sem mascara, somente digitos. Exemplo: 01310100.'
+          maxLength: 15
+        residence_type:
+          nullable: true
+          title: Distrito
+          description: |-
+            Tipo de residencia: urban ou rural.
+
+            * `urban` - Urbano
+            * `rural` - Rural
+          oneOf:
+          - $ref: '#/components/schemas/ResidenceTypeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        ddd_private_phone:
+          nullable: true
+          title: DDD
+          description: |-
+            DDD do telefone de contato.
+
+            * `11` - 11
+            * `12` - 12
+            * `13` - 13
+            * `14` - 14
+            * `15` - 15
+            * `16` - 16
+            * `17` - 17
+            * `18` - 18
+            * `19` - 19
+            * `21` - 21
+            * `22` - 22
+            * `24` - 24
+            * `27` - 27
+            * `28` - 28
+            * `31` - 31
+            * `32` - 32
+            * `33` - 33
+            * `34` - 34
+            * `35` - 35
+            * `37` - 37
+            * `38` - 38
+            * `41` - 41
+            * `42` - 42
+            * `43` - 43
+            * `44` - 44
+            * `45` - 45
+            * `46` - 46
+            * `47` - 47
+            * `48` - 48
+            * `49` - 49
+            * `51` - 51
+            * `53` - 53
+            * `54` - 54
+            * `55` - 55
+            * `61` - 61
+            * `62` - 62
+            * `63` - 63
+            * `64` - 64
+            * `65` - 65
+            * `66` - 66
+            * `67` - 67
+            * `68` - 68
+            * `69` - 69
+            * `71` - 71
+            * `73` - 73
+            * `74` - 74
+            * `75` - 75
+            * `77` - 77
+            * `79` - 79
+            * `81` - 81
+            * `82` - 82
+            * `83` - 83
+            * `84` - 84
+            * `85` - 85
+            * `86` - 86
+            * `87` - 87
+            * `88` - 88
+            * `89` - 89
+            * `91` - 91
+            * `92` - 92
+            * `93` - 93
+            * `94` - 94
+            * `95` - 95
+            * `96` - 96
+            * `97` - 97
+            * `98` - 98
+            * `99` - 99
+          oneOf:
+          - $ref: '#/components/schemas/DddPrivatePhoneEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        private_phone:
+          type: string
+          nullable: true
+          title: Tel. p/ contato
+          description: Telefone de contato sem mascara.
+          maxLength: 10
+        ddd_message_phone:
+          nullable: true
+          title: DDD
+          description: |-
+            DDD do telefone para mensagem.
+
+            * `11` - 11
+            * `12` - 12
+            * `13` - 13
+            * `14` - 14
+            * `15` - 15
+            * `16` - 16
+            * `17` - 17
+            * `18` - 18
+            * `19` - 19
+            * `21` - 21
+            * `22` - 22
+            * `24` - 24
+            * `27` - 27
+            * `28` - 28
+            * `31` - 31
+            * `32` - 32
+            * `33` - 33
+            * `34` - 34
+            * `35` - 35
+            * `37` - 37
+            * `38` - 38
+            * `41` - 41
+            * `42` - 42
+            * `43` - 43
+            * `44` - 44
+            * `45` - 45
+            * `46` - 46
+            * `47` - 47
+            * `48` - 48
+            * `49` - 49
+            * `51` - 51
+            * `53` - 53
+            * `54` - 54
+            * `55` - 55
+            * `61` - 61
+            * `62` - 62
+            * `63` - 63
+            * `64` - 64
+            * `65` - 65
+            * `66` - 66
+            * `67` - 67
+            * `68` - 68
+            * `69` - 69
+            * `71` - 71
+            * `73` - 73
+            * `74` - 74
+            * `75` - 75
+            * `77` - 77
+            * `79` - 79
+            * `81` - 81
+            * `82` - 82
+            * `83` - 83
+            * `84` - 84
+            * `85` - 85
+            * `86` - 86
+            * `87` - 87
+            * `88` - 88
+            * `89` - 89
+            * `91` - 91
+            * `92` - 92
+            * `93` - 93
+            * `94` - 94
+            * `95` - 95
+            * `96` - 96
+            * `97` - 97
+            * `98` - 98
+            * `99` - 99
+          oneOf:
+          - $ref: '#/components/schemas/DddMessagePhoneEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        message_phone:
+          type: string
+          nullable: true
+          title: Tel. p/ mensagem
+          description: Telefone para mensagem sem mascara.
+          maxLength: 10
+        observation:
+          type: string
+          nullable: true
+          title: Observação
+          description: Observacoes gerais sobre a pessoa (max 600 caracteres).
+          maxLength: 600
+    PatchedProfessionalServices:
+      type: object
+      description: Serializer para servicos profissionais prestados a pessoas acolhidas.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        professional_name:
+          type: string
+          description: Somente leitura. Nome do profissional.
+        formatted_created_at:
+          type: string
+          description: Somente leitura. Data de criacao formatada.
+        title:
+          type: string
+          title: Título
+          description: Titulo do servico (max 120 caracteres).
+          maxLength: 120
+        description:
+          type: string
+          nullable: true
+          title: Descrição
+          description: Descricao do servico (max 600 caracteres).
+          maxLength: 600
+        professional:
+          type: integer
+          title: Profissional
+          description: ID da pessoa profissional responsavel pelo atendimento.
+    PatientCompanionCheckin:
+      type: object
+      description: Serializer para check-in simplificado de paciente com acompanhante.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        companion_name:
+          type: string
+          description: Somente leitura. Nome do acompanhante.
+        patient_name:
+          type: string
+          description: Somente leitura. Nome do paciente.
+        formatted_created_at:
+          type: string
+          description: Somente leitura. Data formatada.
+        patient:
+          type: integer
+          title: Paciente
+          description: ID da pessoa paciente.
+        companion:
+          type: integer
+          title: Acompanhante
+          description: ID da pessoa acompanhante.
+      required:
+      - companion
+      - id
+      - patient
+    Person:
+      type: object
+      description: Serializer de pessoa com normalizacao textual e campos formatados
+        de leitura.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        formatted_born_date:
+          type: string
+          description: Somente leitura. Data de nascimento formatada como DD/MM/YYYY.
+        formatted_cpf:
+          type: string
+          description: Somente leitura. CPF formatado como XXX.XXX.XXX-XX.
+        formatted_postal_code:
+          type: string
+          description: Somente leitura. CEP formatado como XXXXX-XXX.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Criado em
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Atualizado em
+        name:
+          type: string
+          title: Nome
+          description: Nome completo da pessoa (max 100 caracteres).
+          maxLength: 100
+        mother_name:
+          type: string
+          nullable: true
+          title: Nome da mãe
+          description: Nome da mae (opcional).
+          maxLength: 100
+        born_date:
+          type: string
+          format: date
+          nullable: true
+          title: Dt. nascimento
+          description: Data de nascimento no formato YYYY-MM-DD.
+        death_date:
+          type: string
+          format: date
+          nullable: true
+          title: Dt. óbito
+        email:
+          type: string
+          format: email
+          nullable: true
+          title: E-mail
+          description: Email valido para contato.
+          maxLength: 100
+        gender:
+          nullable: true
+          title: Gênero
+          description: |-
+            Genero: M, F ou O.
+
+            * `M` - Masculino
+            * `F` - Feminino
+            * `O` - Outro
+          oneOf:
+          - $ref: '#/components/schemas/GenderEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        cpf:
+          type: string
+          nullable: true
+          description: 'CPF sem mascara, somente digitos. Exemplo: 12345678901.'
+          maxLength: 14
+        rg:
+          type: string
+          nullable: true
+          description: RG da pessoa (opcional).
+          maxLength: 14
+        rg_ssp:
+          nullable: true
+          title: SSP
+          description: |-
+            UF emissora do RG (exemplo: SP).
+
+            * `SP` - São Paulo
+            * `PR` - Paraná
+            * `SC` - Santa Catarina
+            * `RS` - Rio Grande do Sul
+            * `MS` - Mato Grosso do Sul
+            * `RO` - Rondônia
+            * `AC` - Acre
+            * `AM` - Amazonas
+            * `RR` - Roraima
+            * `PA` - Pará
+            * `AP` - Amapá
+            * `TO` - Tocantins
+            * `MA` - Maranhão
+            * `RN` - Rio Grande do Norte
+            * `PB` - Paraíba
+            * `PE` - Pernambuco
+            * `AL` - Alagoas
+            * `SE` - Sergipe
+            * `BA` - Bahia
+            * `MG` - Minas Gerais
+            * `RJ` - Rio de Janeiro
+            * `MT` - Mato Grosso
+            * `GO` - Goiás
+            * `DF` - Distrito Federal
+            * `PI` - Piauí
+            * `CE` - Ceará
+            * `ES` - Espírito Santo
+          oneOf:
+          - $ref: '#/components/schemas/RgSspEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        state:
+          nullable: true
+          title: Estado
+          description: |-
+            UF de residencia ou origem.
+
+            * `SP` - São Paulo
+            * `PR` - Paraná
+            * `SC` - Santa Catarina
+            * `RS` - Rio Grande do Sul
+            * `MS` - Mato Grosso do Sul
+            * `RO` - Rondônia
+            * `AC` - Acre
+            * `AM` - Amazonas
+            * `RR` - Roraima
+            * `PA` - Pará
+            * `AP` - Amapá
+            * `TO` - Tocantins
+            * `MA` - Maranhão
+            * `RN` - Rio Grande do Norte
+            * `PB` - Paraíba
+            * `PE` - Pernambuco
+            * `AL` - Alagoas
+            * `SE` - Sergipe
+            * `BA` - Bahia
+            * `MG` - Minas Gerais
+            * `RJ` - Rio de Janeiro
+            * `MT` - Mato Grosso
+            * `GO` - Goiás
+            * `DF` - Distrito Federal
+            * `PI` - Piauí
+            * `CE` - Ceará
+            * `ES` - Espírito Santo
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        address_line_1:
+          type: string
+          nullable: true
+          title: Endereço (linha 1)
+          description: 'Endereco principal: rua e numero.'
+          maxLength: 100
+        address_line_2:
+          type: string
+          nullable: true
+          title: Endereço (linha 2)
+          description: Complemento de endereco (opcional).
+          maxLength: 100
+        neighbourhood:
+          type: string
+          nullable: true
+          title: Bairro
+          description: Bairro.
+          maxLength: 60
+        city:
+          type: string
+          nullable: true
+          title: Cidade
+          description: Cidade valida no Brasil.
+          maxLength: 60
+        postal_code:
+          type: string
+          nullable: true
+          title: CEP
+          description: 'CEP sem mascara, somente digitos. Exemplo: 01310100.'
+          maxLength: 15
+        residence_type:
+          nullable: true
+          title: Distrito
+          description: |-
+            Tipo de residencia: urban ou rural.
+
+            * `urban` - Urbano
+            * `rural` - Rural
+          oneOf:
+          - $ref: '#/components/schemas/ResidenceTypeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        ddd_private_phone:
+          nullable: true
+          title: DDD
+          description: |-
+            DDD do telefone de contato.
+
+            * `11` - 11
+            * `12` - 12
+            * `13` - 13
+            * `14` - 14
+            * `15` - 15
+            * `16` - 16
+            * `17` - 17
+            * `18` - 18
+            * `19` - 19
+            * `21` - 21
+            * `22` - 22
+            * `24` - 24
+            * `27` - 27
+            * `28` - 28
+            * `31` - 31
+            * `32` - 32
+            * `33` - 33
+            * `34` - 34
+            * `35` - 35
+            * `37` - 37
+            * `38` - 38
+            * `41` - 41
+            * `42` - 42
+            * `43` - 43
+            * `44` - 44
+            * `45` - 45
+            * `46` - 46
+            * `47` - 47
+            * `48` - 48
+            * `49` - 49
+            * `51` - 51
+            * `53` - 53
+            * `54` - 54
+            * `55` - 55
+            * `61` - 61
+            * `62` - 62
+            * `63` - 63
+            * `64` - 64
+            * `65` - 65
+            * `66` - 66
+            * `67` - 67
+            * `68` - 68
+            * `69` - 69
+            * `71` - 71
+            * `73` - 73
+            * `74` - 74
+            * `75` - 75
+            * `77` - 77
+            * `79` - 79
+            * `81` - 81
+            * `82` - 82
+            * `83` - 83
+            * `84` - 84
+            * `85` - 85
+            * `86` - 86
+            * `87` - 87
+            * `88` - 88
+            * `89` - 89
+            * `91` - 91
+            * `92` - 92
+            * `93` - 93
+            * `94` - 94
+            * `95` - 95
+            * `96` - 96
+            * `97` - 97
+            * `98` - 98
+            * `99` - 99
+          oneOf:
+          - $ref: '#/components/schemas/DddPrivatePhoneEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        private_phone:
+          type: string
+          nullable: true
+          title: Tel. p/ contato
+          description: Telefone de contato sem mascara.
+          maxLength: 10
+        ddd_message_phone:
+          nullable: true
+          title: DDD
+          description: |-
+            DDD do telefone para mensagem.
+
+            * `11` - 11
+            * `12` - 12
+            * `13` - 13
+            * `14` - 14
+            * `15` - 15
+            * `16` - 16
+            * `17` - 17
+            * `18` - 18
+            * `19` - 19
+            * `21` - 21
+            * `22` - 22
+            * `24` - 24
+            * `27` - 27
+            * `28` - 28
+            * `31` - 31
+            * `32` - 32
+            * `33` - 33
+            * `34` - 34
+            * `35` - 35
+            * `37` - 37
+            * `38` - 38
+            * `41` - 41
+            * `42` - 42
+            * `43` - 43
+            * `44` - 44
+            * `45` - 45
+            * `46` - 46
+            * `47` - 47
+            * `48` - 48
+            * `49` - 49
+            * `51` - 51
+            * `53` - 53
+            * `54` - 54
+            * `55` - 55
+            * `61` - 61
+            * `62` - 62
+            * `63` - 63
+            * `64` - 64
+            * `65` - 65
+            * `66` - 66
+            * `67` - 67
+            * `68` - 68
+            * `69` - 69
+            * `71` - 71
+            * `73` - 73
+            * `74` - 74
+            * `75` - 75
+            * `77` - 77
+            * `79` - 79
+            * `81` - 81
+            * `82` - 82
+            * `83` - 83
+            * `84` - 84
+            * `85` - 85
+            * `86` - 86
+            * `87` - 87
+            * `88` - 88
+            * `89` - 89
+            * `91` - 91
+            * `92` - 92
+            * `93` - 93
+            * `94` - 94
+            * `95` - 95
+            * `96` - 96
+            * `97` - 97
+            * `98` - 98
+            * `99` - 99
+          oneOf:
+          - $ref: '#/components/schemas/DddMessagePhoneEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        message_phone:
+          type: string
+          nullable: true
+          title: Tel. p/ mensagem
+          description: Telefone para mensagem sem mascara.
+          maxLength: 10
+        observation:
+          type: string
+          nullable: true
+          title: Observação
+          description: Observacoes gerais sobre a pessoa (max 600 caracteres).
+          maxLength: 600
+      required:
+      - created_at
+      - id
+      - name
+      - updated_at
+    ProfessionalServices:
+      type: object
+      description: Serializer para servicos profissionais prestados a pessoas acolhidas.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        professional_name:
+          type: string
+          description: Somente leitura. Nome do profissional.
+        formatted_created_at:
+          type: string
+          description: Somente leitura. Data de criacao formatada.
+        title:
+          type: string
+          title: Título
+          description: Titulo do servico (max 120 caracteres).
+          maxLength: 120
+        description:
+          type: string
+          nullable: true
+          title: Descrição
+          description: Descricao do servico (max 600 caracteres).
+          maxLength: 600
+        professional:
+          type: integer
+          title: Profissional
+          description: ID da pessoa profissional responsavel pelo atendimento.
+      required:
+      - id
+      - professional
+    ReasonEnum:
+      enum:
+      - patient
+      - companion
+      - professional
+      - voluntary
+      - visitor
+      - other
+      type: string
+      description: |-
+        * `patient` - Paciente
+        * `companion` - Acompanhante
+        * `professional` - Profissional
+        * `voluntary` - Voluntário
+        * `visitor` - Visitantes
+        * `other` - Outros
+    ResidenceTypeEnum:
+      enum:
+      - urban
+      - rural
+      type: string
+      description: |-
+        * `urban` - Urbano
+        * `rural` - Rural
+    RgSspEnum:
+      enum:
+      - SP
+      - PR
+      - SC
+      - RS
+      - MS
+      - RO
+      - AC
+      - AM
+      - RR
+      - PA
+      - AP
+      - TO
+      - MA
+      - RN
+      - PB
+      - PE
+      - AL
+      - SE
+      - BA
+      - MG
+      - RJ
+      - MT
+      - GO
+      - DF
+      - PI
+      - CE
+      - ES
+      type: string
+      description: |-
+        * `SP` - São Paulo
+        * `PR` - Paraná
+        * `SC` - Santa Catarina
+        * `RS` - Rio Grande do Sul
+        * `MS` - Mato Grosso do Sul
+        * `RO` - Rondônia
+        * `AC` - Acre
+        * `AM` - Amazonas
+        * `RR` - Roraima
+        * `PA` - Pará
+        * `AP` - Amapá
+        * `TO` - Tocantins
+        * `MA` - Maranhão
+        * `RN` - Rio Grande do Norte
+        * `PB` - Paraíba
+        * `PE` - Pernambuco
+        * `AL` - Alagoas
+        * `SE` - Sergipe
+        * `BA` - Bahia
+        * `MG` - Minas Gerais
+        * `RJ` - Rio de Janeiro
+        * `MT` - Mato Grosso
+        * `GO` - Goiás
+        * `DF` - Distrito Federal
+        * `PI` - Piauí
+        * `CE` - Ceará
+        * `ES` - Espírito Santo
+    StateEnum:
+      enum:
+      - SP
+      - PR
+      - SC
+      - RS
+      - MS
+      - RO
+      - AC
+      - AM
+      - RR
+      - PA
+      - AP
+      - TO
+      - MA
+      - RN
+      - PB
+      - PE
+      - AL
+      - SE
+      - BA
+      - MG
+      - RJ
+      - MT
+      - GO
+      - DF
+      - PI
+      - CE
+      - ES
+      type: string
+      description: |-
+        * `SP` - São Paulo
+        * `PR` - Paraná
+        * `SC` - Santa Catarina
+        * `RS` - Rio Grande do Sul
+        * `MS` - Mato Grosso do Sul
+        * `RO` - Rondônia
+        * `AC` - Acre
+        * `AM` - Amazonas
+        * `RR` - Roraima
+        * `PA` - Pará
+        * `AP` - Amapá
+        * `TO` - Tocantins
+        * `MA` - Maranhão
+        * `RN` - Rio Grande do Norte
+        * `PB` - Paraíba
+        * `PE` - Pernambuco
+        * `AL` - Alagoas
+        * `SE` - Sergipe
+        * `BA` - Bahia
+        * `MG` - Minas Gerais
+        * `RJ` - Rio de Janeiro
+        * `MT` - Mato Grosso
+        * `GO` - Goiás
+        * `DF` - Distrito Federal
+        * `PI` - Piauí
+        * `CE` - Ceará
+        * `ES` - Espírito Santo
+    User:
+      type: object
+      description: Serializer para criacao e leitura de usuarios da API.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          description: Identificador do usuario.
+        username:
+          type: string
+          description: Nome de usuario unico para autenticacao.
+        email:
+          type: string
+          format: email
+          description: Email de contato do usuario.
+        password:
+          type: string
+          writeOnly: true
+          description: Senha do usuario (somente escrita).
+      required:
+      - id
+      - password
+      - username
+  securitySchemes:
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"
+externalDocs:
+  description: Documentação OpenAPI
+  url: https://github.com/leandrocl2005/user-management-django-custom-admin
