@@ -185,7 +185,7 @@ Meta de qualidade da Fase 4:
   - percentual de atendimentos ativos
   - distribuicao por servico domestico
 
-## Handoff tecnico (Fase 4)
+## Handoff tecnico 
 
 - Guia de uso da API: `API_USAGE.md`
 - Arquitetura e trade-offs: `ARCHITECTURE.md`
